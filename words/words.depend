@@ -1,0 +1,9 @@
+# depslib dependency file v1.0
+1461811029 source:/home/zsd/桌面/words1/words/main.cpp
+	<iostream>
+	<string>
+	<vector>
+	<fstream>
+	<algorithm>
+	<stdio.h>
+
