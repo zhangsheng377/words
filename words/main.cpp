@@ -4,6 +4,8 @@
 #include <fstream>
 #include <algorithm>
 #include <stdio.h>
+#include <cstring>
+#include <queue>
 //#include "boost/regex.hpp"
 
 using namespace std;
@@ -19,46 +21,52 @@ public:
 };
 vector<NODE> nodes;
 
-vector< vector<int> >  D;
-vector< vector<int> >  PATHD;
-const int INF=999999;
+//vector< vector<int> >  D;
+//vector< vector<int> >  PATHD;
+//const int INF=999999;
 
 int SearchID(string word);
 void StartDFS(int startID,int targetID);
 bool DFS(int wordID,int targetID,vector<string> path);
 void ShowPath(vector<string> path);
 
+class ANT
+{
+public:
+    vector<string> path;
+    int wordID;
+};
+queue<ANT> ants;
+bool isReach=false;
+bool move(int targetID,int wordID,vector<string> path);
+
 int main()
 {
-
     cout<<"reading wordsdata1, please wait..."<<endl;
-    //FILE *fp=fopen("wordsdata","r");
     ifstream fin("wordsdata1");
     int nodes_size;
-    //fread(&nodes_size,sizeof(nodes_size),1,fp);
     fin>>nodes_size;
     nodes.resize(nodes_size);
     //D.resize(nodes_size);
     //PATHD.resize(nodes_size);
-    // cout<<"resize ok"<<endl;
     //cout<<nodes_size<<endl;
     for(int i=0; i<nodes_size; i++)
     {
         /*D[i].resize(nodes_size);
-        //cout<<"resize  D[i] ok"<<endl;
+        cout<<"resize  D[i] ok"<<endl;
         for(int D_i=0; D_i<nodes_size; D_i++)
         {
             D[i][D_i]=INF;
             if(i==D_i) D[i][D_i]=0;
         }
-        //cout<<"init D[i] ok"<<endl;
+        cout<<"init D[i] ok"<<endl;
         PATHD[i].resize(nodes_size);
-        //cout<<"resize  PATHD[i] ok"<<endl;
+        cout<<"resize  PATHD[i] ok"<<endl;
         for(int P_i=0; P_i<nodes_size; P_i++)
         {
             PATHD[i][P_i]=-1;
-        }*/
-        //cout<<"init  PATHD[i] ok"<<endl;
+        }
+        cout<<"init  PATHD[i] ok"<<endl;*/
         //fread(&nodes[i].NO,sizeof(nodes[i].NO),1,fp);
         fin>>nodes[i].NO;
         //cout<<"nodes[i].NO="<<nodes[i].NO<<endl;
@@ -97,8 +105,8 @@ int main()
     //fout.close();
     //cout<<nodes[0].word<<endl;
 
-    char c;
-    do
+    //char c='y';
+    //do
     {
         bestpath.clear();
         string startWord;
@@ -108,7 +116,7 @@ int main()
         if(startId==-1)
         {
             cout<<"Can't find this word."<<endl;
-            continue;
+            //continue;
         }
         /*
                     vector<string> strs=FindNearWords(startWord,1);
@@ -124,19 +132,97 @@ int main()
         if(targetId==-1)
         {
             cout<<"Can't find this word."<<endl;
-            continue;
+            //continue;
         }
 
-        StartDFS(startId,targetId);
+        //StartDFS(startId,targetId);
+        //ants.clear();
+        ANT ant;
+        ant.wordID=startId;
+        vector<string> path;
+        path.clear();
+        ant.path=path;
+        ants.push(ant);
+        while(ants.size())
+        {
+            ANT tmp=ants.front();
+            ants.pop();
+            move(targetId,tmp.wordID,tmp.path);
+            //cout<<"ants   moved"<<endl;
+            if(isReach==true) break;
 
-        cout<<endl<<"If you want to continue, please input y"<<endl;
-        cin>>c;
+        }
+        if(isReach==false) cout<<"Can't find path."<<endl;
+        //cout<<endl<<"If you want to continue, please input y"<<endl;
+        //docin>>c;
     }
-    while(c=='y');
+    //while(c=='y');
 
     return 0;
 }
 
+
+bool move(int targetID,int wordID,vector<string> path)
+{
+    //cout<<"ant moving"<<endl;
+    string word=nodes[wordID].word;
+    string targetWord=nodes[targetID].word;
+    path.push_back(word);
+    int bestpath_size=bestpath.size();
+    int path_size=path.size();
+    if(word==targetWord)
+    {
+        if(bestpath_size==0 || path_size<bestpath_size)
+        {
+            bestpath=path;
+            isReach=true;
+            ShowPath(bestpath);//怕程序执行得太久，所以每次输出更好一些的结果，而不是到最后再输出最优解
+            return true;
+        }
+    }
+    else
+    {
+        if(bestpath_size>0 && path_size>=bestpath_size) return false;
+        else
+        {
+            //bool isFind=false;
+            int word_length=word.length();
+            vector<string> tmpPath=path;
+            sort(tmpPath.begin(),tmpPath.end());
+            for(int i=0; i<word_length; i++)
+            {
+                //if(word[i]!=targetWord[i])
+                {
+                    //cout<<"ids"<<endl;
+                    vector<int> ids=nodes[wordID].nearNodes[i];
+                    int ids_size=ids.size();
+                    //cout<<"ids_size="<<ids_size<<endl;
+                    for(int j=0; j<ids_size; j++)
+                    {
+                        if(binary_search(tmpPath.begin(),tmpPath.end(),nodes[ids[j]].word)==false)//去环
+                        {
+                            //if(DFS(ids[j],targetID,path)==true) isFind=true;
+                            //cout<<"ant start"<<endl;
+                            ANT ant;
+                            //cout<<"ant start 1     j="<<j<<endl;
+                            ant.wordID=ids[j];
+                            //cout<<"ant start 2     j="<<j<<endl;
+                            ant.path=path;
+                            //ant->path.resize(path.size());
+                            //memcpy(&ant->path[0],&path[0],path.size()*sizeof(string));
+                            //cout<<"ant start 3     j="<<j<<endl;
+                            ants.push(ant);
+                            //cout<<"ant end"<<endl;
+                        }
+                    }
+                }
+            }
+            //return isFind;
+        }
+    }
+    // ~ANT();
+    return false;
+}
 
 int SearchID(string word)
 {
